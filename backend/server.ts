@@ -12,7 +12,7 @@ import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 
 import { authRouter } from './src/routes/auth';
-import { roomRouter } from './src/routes/room';
+import { workingSpaceRouter } from './src/routes/workingSpace';
 import { bookingRouter } from './src/routes/booking';
 
 dotenv.config({ path: "./src/config/config.env" });
@@ -59,10 +59,9 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocs));
 app.use(`${baseUrl}/auth`, authRouter);
-app.use(`${baseUrl}/rooms`, roomRouter);
+app.use(`${baseUrl}/workingSpace`, workingSpaceRouter);
 app.use(`${baseUrl}/bookings`, bookingRouter);
 
-console.log(process.env.PORT)
 const PORT: number = Number(process.env.PORT ?? '5000');
 
 const server = app.listen(PORT, () => console.log("Server running in ", process.env.NODE_ENV, " node on port", PORT));

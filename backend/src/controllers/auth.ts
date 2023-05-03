@@ -4,6 +4,7 @@ import { IUser, User } from "../models/User";
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userEntity: IUser = req.body;
+    userEntity.balance = 0;
 
     const user = await User.create(userEntity);
 
@@ -65,6 +66,18 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   const user = await User.findById(req.body.user.id);
   res.status(200).json({ success: true, data: user });
 };
+
+export const updateBalance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.body.user.id, { balance: req.body.balance ?? 0 }, {
+      new: true,
+      runValidators: true,
+    });
+    res.status(200).json({ success: true, data: user });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e });
+  }
+}
 
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
   res.cookie("token", "none", {

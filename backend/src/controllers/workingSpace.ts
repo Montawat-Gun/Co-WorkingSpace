@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { IRoom, Room } from "../models/Room";
+import { IWorkingSpace, WorkingSpace } from "../models/WorkingSpace";
 import { IPagination, IResult } from "../interfaces/Result";
 
-export const getRooms = async (req: Request, res: Response<IResult<IRoom[]>>, next: NextFunction) => {
+export const getWorkingSpaces = async (req: Request, res: Response<IResult<IWorkingSpace[]>>, next: NextFunction) => {
 	try {
 		const reqQuery = { ...req.query };
 		const removeFields = ["select", "sort", "page", "limit"];
@@ -10,10 +10,10 @@ export const getRooms = async (req: Request, res: Response<IResult<IRoom[]>>, ne
 
 		let queryStr = JSON.stringify(req.query);
 		queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`);
-		let query = Room.find(JSON.parse(queryStr)).populate("booking");
+		let query = WorkingSpace.find(JSON.parse(queryStr)).populate("booking");
 
 		// Select field
-		if (req.query.select && req.query.select instanceof String) {
+		if (req.query.select && typeof req.query.select === "string") {
 			const fields = req.query.select.split(",").join(" ");
 			query = query.select(fields);
 		}
@@ -31,7 +31,7 @@ export const getRooms = async (req: Request, res: Response<IResult<IRoom[]>>, ne
 		const limit = parseInt(req.query.limit?.toString() ?? '', 10) ?? 25;
 		const startIndex = (page - 1) * limit;
 		const endIndex = page * limit;
-		const total = await Room.countDocuments();
+		const total = await WorkingSpace.countDocuments();
 
 		// Execute query
 		query = query.skip(startIndex).limit(limit);
@@ -53,12 +53,12 @@ export const getRooms = async (req: Request, res: Response<IResult<IRoom[]>>, ne
 			};
 		}
 
-		const rooms = await query;
+		const workingSpaces = await query;
 
-		if (!rooms || rooms.length === 0) {
+		if (!workingSpaces || workingSpaces.length === 0) {
 			res.status(404).json({ success: false, message: "not found" });
 		}
-		res.status(200).json({ success: true, count: Room.length, pagination: pagination, data: rooms });
+		res.status(200).json({ success: true, count: total, pagination: pagination, data: workingSpaces });
 	} catch (err: any) {
 		console.error(err);
 		res.status(400).json({ success: false, message: err });
@@ -66,48 +66,48 @@ export const getRooms = async (req: Request, res: Response<IResult<IRoom[]>>, ne
 }
 
 
-export const getRoom = async (req: Request, res: Response, next: NextFunction) => {
+export const getWorkingSpace = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const room = await Room.findById(req.params.id);
-		if (!room) {
+		const workingSpace = await WorkingSpace.findById(req.params.id);
+		if (!workingSpace) {
 			return res.status(404).json({ success: false, message: "Not found" });
 		}
-		res.status(200).json({ success: true, data: room });
+		res.status(200).json({ success: true, data: workingSpace });
 	} catch (err: any) {
 		res.status(400).json({ success: false, message: err });
 	}
 }
 
-export const createRoom = async (req: Request, res: Response<IResult<IRoom>>, next: NextFunction) => {
-	const room = await Room.create(req.body);
-	res.status(201).json({ success: true, data: room });
+export const createWorkingSpace = async (req: Request, res: Response<IResult<IWorkingSpace>>, next: NextFunction) => {
+	const workingSpace = await WorkingSpace.create(req.body);
+	res.status(201).json({ success: true, data: workingSpace });
 }
 
-export const updateRoom = async (req: Request, res: Response, next: NextFunction) => {
+export const updateWorkingSpace = async (req: Request, res: Response, next: NextFunction) => {
 	console.log("req.params.id", req.params.id)
 	try {
-		const room = await Room.findByIdAndUpdate(req.params.id, req.body, {
+		const workingSpace = await WorkingSpace.findByIdAndUpdate(req.params.id, req.body, {
 			new: true,
 			runValidators: true,
 		});
 
-		if (!room) {
-			return res.status(400).json({ success: false, data: room });
+		if (!workingSpace) {
+			return res.status(400).json({ success: false, data: workingSpace });
 		}
-		res.status(200).json({ success: true, data: room });
+		res.status(200).json({ success: true, data: workingSpace });
 	} catch (err: any) {
 		res.status(400).json({ success: false, message: err });
 		console.error(err);
 	}
 }
 
-export const deleteRoom = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteWorkingSpace = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const room = await Room.findById(req.params.id);
-		if (!room) {
+		const workingSpace = await WorkingSpace.findById(req.params.id);
+		if (!workingSpace) {
 			return res.status(400).json({ success: false, message: "Not found" });
 		}
-		room.deleteOne();
+		workingSpace.deleteOne();
 		res.status(200).json({ success: true, data: {} });
 	} catch (err) {
 		res.status(400).json({ success: false, message: err });

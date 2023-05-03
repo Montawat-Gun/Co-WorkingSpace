@@ -10,7 +10,8 @@ export interface IUser {
 	createdAt: Date;
 	role: "user" | "admin",
 	resetPasswordToken: string,
-	resetPasswordExpire: Date
+	resetPasswordExpire: Date,
+	balance: number
 }
 
 interface IUserMethods {
@@ -51,6 +52,7 @@ const userSchema = new Schema<IUser>({
 		minlength: 6,
 		select: false,
 	},
+	balance: { type: Number, required: true },
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,
 	createdAt: {
