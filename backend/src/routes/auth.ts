@@ -1,15 +1,16 @@
 import express from 'express';
 
-import { register, login, getMe, logout, updateBalance } from "../controllers/auth";
+import { register, login, getMe, logout, updateBalance, getCollect } from "../controllers/auth";
 
-const router = express.Router();
+const authRouter = express.Router();
 
-const { protect } = require("../middleware/auth");
+import { protect } from "../middleware/auth";
 
-router.post("/register", register);
-router.post("/login", login);
-router.get("/me", protect, getMe);
-router.post("/updateBalance", protect, updateBalance);
-router.get("/logout", logout)
+authRouter.post("/register", register);
+authRouter.post("/login", login);
+authRouter.get("/me", protect, getMe);
+authRouter.post("/updateBalance", protect, updateBalance);
+authRouter.get("/collect", protect, getCollect);
+authRouter.get("/logout", logout)
 
-export { router as authRouter }
+export { authRouter }

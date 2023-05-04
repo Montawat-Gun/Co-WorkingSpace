@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { IUser, User } from "../models/User";
+import { Collect } from '../models/Collect';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -64,12 +65,18 @@ export const getCookieOption = () => {
 
 export const getMe = async (req: Request, res: Response, next: NextFunction) => {
   const user = await User.findById(req.body.user.id);
-  res.status(200).json({ success: true, data: user });
+  return res.status(200).json({ success: true, data: user });
 };
+
+export const getCollect = async (req: Request, res: Response, next: NextFunction) => {
+  const collect = await Collect.findOne({ user: req.body.user.id });
+  return res.status(200).json({ success: true, data: collect });
+}
 
 export const updateBalance = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findByIdAndUpdate(req.body.user.id, { balance: req.body.balance ?? 0 }, {
+    const currentUser = req.body.user;
+    const user = await User.findByIdAndUpdate(req.body.user.id, { balance: currentUser.balance + req.body.balance ?? 0 }, {
       new: true,
       runValidators: true,
     });

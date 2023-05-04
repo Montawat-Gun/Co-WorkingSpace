@@ -10,7 +10,7 @@ export const getWorkingSpaces = async (req: Request, res: Response<IResult<IWork
 
 		let queryStr = JSON.stringify(req.query);
 		queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`);
-		let query = WorkingSpace.find(JSON.parse(queryStr)).populate("booking");
+		let query = WorkingSpace.find(JSON.parse(queryStr));
 
 		// Select field
 		if (req.query.select && typeof req.query.select === "string") {

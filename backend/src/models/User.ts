@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export interface IUser {
+	id: string;
 	name: string;
 	email: string;
 	phone: string;

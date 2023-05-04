@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { Booking } from "../models/Booking";
+import { Booking, IBooking } from "../models/Booking";
 import { WorkingSpace } from "../models/WorkingSpace";
 import { Collect } from "../models/Collect";
-import { User } from "../models/User";
+import { IUser, User } from "../models/User";
 import { IPagination } from "../interfaces/Result";
 
 export const getBookings = async (req: Request, res: Response, next: NextFunction) => {
@@ -98,6 +98,12 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 			return res.status(404).json({ success: false, message: `No workingSpace with the id of ${req.params.workingSpaceId}` });
 		}
 
+		// Check close or open on this day
+		const dayOfWeek = new Date(req.body.bookingDate).toLocaleString('en-us', { weekday: 'long' }).toLocaleLowerCase();
+		if ((workingSpace as any).openWeekDay[dayOfWeek].isCloseAllDay === true) {
+			return res.status(400).json({ success: false, message: `Working space is close on ${dayOfWeek}` });
+		}
+
 		const bookingDate = new Date(req.body.bookingDate);
 		const nextDate = new Date(req.body.bookingDate);
 		nextDate.setDate(bookingDate.getDate() + 1);
@@ -115,31 +121,44 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
 			return res.status(400).json({ success: false, message: `The user with ID ${req.body.user.id} has already made 3 booking` });
 		}
 
-		const user = await User.findById(req.body.user.id);
-		if (user && user.balance >= workingSpace.price) {
-			// Update user balance after booking.
-			User.findByIdAndUpdate(req.body.user.id, { balance: user.balance - workingSpace.price }, {
-				new: true,
-				runValidators: true,
-			});
-
-			req.body.status = "reserved";
-			const booking = await Booking.create(req.body);
+		let user: IUser | null = req.body.user;
+		if (user && user.balance >= req.body.cost) {
+			const dataToSave: IBooking = req.body;
+			dataToSave.status = "reserved";
+			dataToSave.paymentStatus = "paid";
+			const booking = await Booking.create(dataToSave);
 
 			// Collect point after booking
-			const collect = await Collect.findOne({ user: req.body.user });
-			if (collect) {
+			const collect = await Collect.findOne({ user: user });
+
+			if (dataToSave.paymentType === 'coupon' && (collect && collect.count >= 10)) {
+				// Update user balance after booking.
+				await Collect.findOneAndUpdate(collect._id, { count: collect.count - 10 }, {
+					new: true,
+					runValidators: true,
+				});
+			} else if (collect) {
+				// Update user balance after booking.
+				user = await User.findByIdAndUpdate(user.id, { balance: user.balance - dataToSave.cost }, {
+					new: true,
+					runValidators: true,
+				}).select("name balance");
 				await Collect.findOneAndUpdate(collect._id, { count: collect.count + 1 }, {
 					new: true,
 					runValidators: true,
 				});
 			} else {
+				// Update user balance after booking.
+				user = await User.findByIdAndUpdate(user.id, { balance: user.balance - dataToSave.cost }, {
+					new: true,
+					runValidators: true,
+				}).select("name balance");
 				await Collect.create({ user: req.body.user, count: 1 })
 			}
 
 			res.status(201).json({
 				success: true,
-				data: booking,
+				data: { booking: booking.depopulate("user"), collect: collect, user: user },
 			});
 		} else {
 			res.status(400).json({
@@ -159,7 +178,7 @@ export const updateBooking = async (req: Request, res: Response, next: NextFunct
 		if (!booking) {
 			return res.status(404).json({ success: false, message: `No booking with the id of ${req.params.id}` });
 		}
-		//Make sure user is the appointment owner
+		//Make sure user is the booking owner
 		if (booking.user.toString() !== req.body.user.id && req.body.user.role !== "admin") {
 			return res.status(401).json({ success: false, message: `User ${req.body.user.id} is not authorized to update this booking` });
 		}
@@ -176,6 +195,30 @@ export const updateBooking = async (req: Request, res: Response, next: NextFunct
 		return res.status(500).json({ success: false, message: "Cannot update Booking" });
 	}
 };
+
+export const checkIn = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		let booking = await Booking.findById(req.params.id);
+		if (!booking) {
+			return res.status(404).json({ success: false, message: `No booking with the id of ${req.params.id}` });
+		}
+		//Make sure user is the booking owner
+		if (booking.user.toString() !== req.body.user.id && req.body.user.role !== "admin") {
+			return res.status(401).json({ success: false, message: `User ${req.body.user.id} is not authorized to update this booking` });
+		}
+		booking = await Booking.findByIdAndUpdate(req.params.id, { status: "checkedIn" }, {
+			new: true,
+			runValidators: true,
+		});
+		res.status(200).json({
+			success: true,
+			data: booking,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ success: false, message: "Cannot update Booking" });
+	}
+}
 
 export const deleteBooking = async (req: Request, res: Response, next: NextFunction) => {
 	try {

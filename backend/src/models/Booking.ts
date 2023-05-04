@@ -5,7 +5,10 @@ export interface IBooking {
 	user: Types.ObjectId;
 	workingSpace: Types.ObjectId;
 	createAt: Date;
-	status: "reserved" | "canceled"
+	status: "reserved" | "checkedIn" | "canceled";
+	paymentStatus: "paid" | "unpaid";
+	paymentType: "cash" | "coupon";
+	cost: number;
 }
 
 const bookingSchema = new Schema<IBooking>({
@@ -13,6 +16,9 @@ const bookingSchema = new Schema<IBooking>({
 	user: { type: Schema.Types.ObjectId, ref: "User", required: true },
 	workingSpace: { type: Schema.Types.ObjectId, ref: "WorkingSpace", required: true },
 	status: { type: String, required: true },
+	paymentStatus: { type: String },
+	paymentType: { type: String },
+	cost: { type: Number },
 	createAt: { type: Date, default: Date.now },
 });
 
